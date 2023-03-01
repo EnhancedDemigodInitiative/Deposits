@@ -1,12 +1,9 @@
 package net.asmrcraft.deposits;
 
-import com.opencsv.*;
 import net.milkbowl.vault.economy.Economy;
-import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
-import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 
 import org.bukkit.plugin.Plugin;
@@ -23,21 +20,20 @@ import java.util.Calendar;
 import java.util.Date;
 
 public final class Deposits extends JavaPlugin implements CommandExecutor {
-    String PATH;
-    static final String FILENAME = "DepositsData.csv";
-    String FILEPATH;
-    CSVParser PARSER = new CSVParserBuilder().withSeparator(',').build();
     static final String DB_URL = "jdbc:mysql://localhost/";
     static final String USER = "admin";
     static final String PASS = "admin";
     static final String TABLENAME = "DEPOSITS";
     static final String DATABASENAME = "DEPOSITS";
+    static final String FILENAME = "DepositsData.csv";
     static final String TABLECREATE = String.format("CREATE TABLE %s.%s (Username varchar(50), " +
-                                                    "CreateTimestamp varchar(50)," +
-                                                    "Amount integer," +
-                                                    "Duration integer," +
-                                                    "EndingTimestamp varchar(50)," +
-                                                    "Interest float)", DATABASENAME, TABLENAME);
+            "CreateTimestamp varchar(50)," +
+            "Amount integer," +
+            "Duration integer," +
+            "EndingTimestamp varchar(50)," +
+            "Interest float)", DATABASENAME, TABLENAME);
+    String PATH;
+    String FILEPATH;
     public static Economy econ = null;
 
 
@@ -46,7 +42,6 @@ public final class Deposits extends JavaPlugin implements CommandExecutor {
     public void onEnable() {
         // Config
         saveDefaultConfig();
-        FileConfiguration config = this.getConfig();
 
         // Check economy plugin
         if (!setupEconomy() ) {
@@ -56,9 +51,10 @@ public final class Deposits extends JavaPlugin implements CommandExecutor {
         }
         setupEconomy();
 
+        System.out.println("==================================== Deposits ====================================");
+
         // Create A folder for data file, if it doesn't exist
         String userDir = System.getProperty("user.dir");
-        System.out.println("==================================== Deposits ====================================");
         System.out.println("Current Path : " + userDir);
 
         System.out.println("Verifying or creating new folder.");
@@ -70,10 +66,12 @@ public final class Deposits extends JavaPlugin implements CommandExecutor {
             return;
         }
         System.out.println("Folder Verified/Created");
+
+        // Save info about the path
         this.PATH = userDir + "\\plugins\\Deposits";
         this.FILEPATH = this.PATH + "\\" + this.FILENAME;
 
-        // Create Database
+        // Create Database if it doesn't already exist
         try(Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
             Statement statement = conn.createStatement()) {
 
@@ -89,11 +87,11 @@ public final class Deposits extends JavaPlugin implements CommandExecutor {
             }
         }
 
+        // Create the Deposits Table if it doesn't already exist
         try(Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
-            // Create the database
             Statement statement = conn.createStatement()) {
 
-            // Create the table
+
             try {
                 statement.execute(TABLECREATE);
                 System.out.println("Table Created Successfully!");
@@ -106,13 +104,9 @@ public final class Deposits extends JavaPlugin implements CommandExecutor {
                 }
 
             }
-
-            }   catch (SQLException e) {
-                e.printStackTrace();
-                }
-
-
-
+        }   catch (SQLException e) {
+            e.printStackTrace();
+            }
     }
 
     @Override
@@ -121,14 +115,17 @@ public final class Deposits extends JavaPlugin implements CommandExecutor {
     }
 
     private boolean setupEconomy() {
+        // If vault detects no economy, don't activate plugin
         if (getServer().getPluginManager().getPlugin("Vault") == null) {
             return false;
         }
+
         RegisteredServiceProvider<Economy> rsp = getServer().getServicesManager().getRegistration(Economy.class);
         if (rsp == null) {
             return false;
         }
         econ = rsp.getProvider();
+
         return econ != null;
     }
 
@@ -139,9 +136,12 @@ public final class Deposits extends JavaPlugin implements CommandExecutor {
     @SuppressWarnings("SpellCheckingInspection")
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args){
+        // Check if the command is a deposit command
         if (command.getName().equalsIgnoreCase("deposit")) {
             Plugin plugin = getServer().getPluginManager().getPlugin("Vault");
 
+
+            // Since this plugin only works from players POV, check if player is doing it!
             if (sender instanceof Player){
                 Player p = (Player) sender;
                 String playerName = p.getName();
@@ -149,7 +149,7 @@ public final class Deposits extends JavaPlugin implements CommandExecutor {
                 String currentTimeStamp = new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new java.util.Date());
 
                 if (args.length > 0){
-                    // deposit <create> <amount> <days>
+                    // Since correct synax is 'deposit <create> <amount> <days>', check if we have 3 values inputed.
                     if (args.length == 3){
                         if (args[0].equalsIgnoreCase("create")){
                             int amount;
@@ -168,7 +168,6 @@ public final class Deposits extends JavaPlugin implements CommandExecutor {
                                 return true;
                             }
 
-
                             int days;
                             int max_days = (int) getConfig().get("max_days");
 
@@ -185,11 +184,13 @@ public final class Deposits extends JavaPlugin implements CommandExecutor {
                             }
                             double ddays = (double) days;
 
+                            // Needed for date differenec calcuation.
                             Calendar cal = Calendar.getInstance();
 
                             try{
                                 cal.setTime(sdf.parse(currentTimeStamp));
                             } catch (ParseException e) {
+                                p.sendMessage(playerErrorMessage());
                                 e.printStackTrace();
                             }
 
@@ -221,12 +222,12 @@ public final class Deposits extends JavaPlugin implements CommandExecutor {
 
                                     if (eco.hasAccount(p)) {
                                         if (eco.has(p, amount)) {
-                                            eco.withdrawPlayer(p, amount);
-
                                             String createQuery = String.format("insert into %s.%s (Username, CreateTimestamp, Amount, Duration, EndingTimestamp, Interest) " +
                                                             "values('%s','%s',%d,%d,'%s',%3.2f)", DATABASENAME, TABLENAME,
                                                     playerName, currentTimeStamp, amount, days, endingTimeStamp, r);
                                             statement.execute(createQuery);
+
+                                            eco.withdrawPlayer(p, amount);
 
 
                                             p.sendMessage("Congrats! Your Deposit has been created. You can use '/deposit info' to check information about the deposit.");
@@ -236,6 +237,7 @@ public final class Deposits extends JavaPlugin implements CommandExecutor {
                                     }
                                 }
                             } catch (SQLException e) {
+                                p.sendMessage(playerErrorMessage());
                                 e.printStackTrace();
                             }
 
@@ -281,9 +283,8 @@ public final class Deposits extends JavaPlugin implements CommandExecutor {
                                                     (remainingTime % (3600*24)) / 3600, ((remainingTime % (3600*24)) % 3600) / 60));
 
                                 }
-                            } catch (SQLException e) {
-                                e.printStackTrace();
-                            } catch (ParseException e) {
+                            } catch (SQLException | ParseException e) {
+                                p.sendMessage(playerErrorMessage());
                                 e.printStackTrace();
                             }
 
@@ -309,6 +310,7 @@ public final class Deposits extends JavaPlugin implements CommandExecutor {
                                 p.sendMessage("Your Deposit has been deleted!");
 
                                 } catch (SQLException e) {
+                                p.sendMessage(playerErrorMessage());
                                 e.printStackTrace();
                             }
                         } else if (args[0].equalsIgnoreCase("claim")) {
@@ -347,22 +349,27 @@ public final class Deposits extends JavaPlugin implements CommandExecutor {
                                             remainingTime / (3600*24), (remainingTime % (3600*24)) / 3600, ((remainingTime % (3600*24)) % 3600) / 60));
                                 }
 
-                            } catch (SQLException e) {
+                            } catch (SQLException | ParseException e) {
+                                p.sendMessage(playerErrorMessage());
                                 e.printStackTrace();
-                            } catch (ParseException e) {
-                                e.printStackTrace();
-
                             }
                         }
 
 
+                    } else {
+                        // Here when arg length >0, but not 1 or 3.
+                        return false;
                     }
 
                 } else
                 {
+                    // Here when args lenght is 0.
                     return false;
                 }
 
+            } else {
+                // Here when the command isn't executed by a player.
+                System.out.println("This plugin currently only works from players side.");
             }
 
 
@@ -370,6 +377,10 @@ public final class Deposits extends JavaPlugin implements CommandExecutor {
 
         return true;
 
+    }
+
+    public String playerErrorMessage(){
+        return "Something went wrong! Please contact Admins to report it.";
     }
 
 }
