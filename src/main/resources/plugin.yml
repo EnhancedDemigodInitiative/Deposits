@@ -1,0 +1,11 @@
+name: Deposits
+version: '${project.version}'
+main: net.asmrcraft.deposits.Deposits
+api-version: 1.19
+authors: [ EnhancedDemigod ]
+description: Deposits plugin for the ASMRcraft server.
+depend: [Vault]
+commands:
+  deposit:
+    description: This is the command for accessing deposits plugin.
+    usage: /deposit <create:delete:info:claim>
