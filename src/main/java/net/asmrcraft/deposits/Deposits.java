@@ -25,7 +25,6 @@ public final class Deposits extends JavaPlugin implements CommandExecutor {
     static final String PASS = "admin";
     static final String TABLENAME = "DEPOSITS";
     static final String DATABASENAME = "DEPOSITS";
-    static final String FILENAME = "DepositsData.csv";
     static final String TABLECREATE = String.format("CREATE TABLE %s.%s (Username varchar(50), " +
             "CreateTimestamp varchar(50)," +
             "Amount integer," +
@@ -33,7 +32,6 @@ public final class Deposits extends JavaPlugin implements CommandExecutor {
             "EndingTimestamp varchar(50)," +
             "Interest float)", DATABASENAME, TABLENAME);
     String PATH;
-    String FILEPATH;
     public static Economy econ = null;
 
 
@@ -69,7 +67,6 @@ public final class Deposits extends JavaPlugin implements CommandExecutor {
 
         // Save info about the path
         this.PATH = userDir + "\\plugins\\Deposits";
-        this.FILEPATH = this.PATH + "\\" + this.FILENAME;
 
         // Create Database if it doesn't already exist
         try(Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
