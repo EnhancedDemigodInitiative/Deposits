@@ -9,3 +9,15 @@ commands:
   deposit:
     description: This is the command for accessing deposits plugin.
     usage: /deposit <create:delete:info:claim>
+  deposit create:
+    description: This is used for creating a deposit, by passing it the <amount> of money and <days>
+    usage: /deposit create <amount> <days>
+  deposit delete:
+    description: This is used for deleting a deposit
+    usage: /deposit delete
+  deposit info:
+    description: This is used for getting information about the existing deposit
+    usage: /deposit info
+  deposit claim:
+    description: This is used for claiming the deposit, after enough time has elapsed.
+    usage: /deposit claim

@@ -1,6 +1,7 @@
 package net.asmrcraft.deposits;
 
 import net.milkbowl.vault.economy.Economy;
+import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -137,7 +138,6 @@ public final class Deposits extends JavaPlugin implements CommandExecutor {
         if (command.getName().equalsIgnoreCase("deposit")) {
             Plugin plugin = getServer().getPluginManager().getPlugin("Vault");
 
-
             // Since this plugin only works from players POV, check if player is doing it!
             if (sender instanceof Player){
                 Player p = (Player) sender;
@@ -156,12 +156,12 @@ public final class Deposits extends JavaPlugin implements CommandExecutor {
                             try{
                                 amount = Integer.parseInt(args[1]);
                             } catch (NumberFormatException e){
-                                p.sendMessage("Please input an integer, as the amount!");
+                                p.sendMessage(ChatColor.translateAlternateColorCodes('&', "&CPlease input an integer, as the amount!"));
                                 return true;
                             }
 
                             if (amount < min_deposit || amount > max_deposit){
-                                p.sendMessage(String.format("The amount must be between: $%,d and $%,d", min_deposit, max_deposit));
+                                p.sendMessage(ChatColor.translateAlternateColorCodes('&', String.format("&CThe amount must be between: $%,d and $%,d", min_deposit, max_deposit)));
                                 return true;
                             }
 
@@ -171,12 +171,12 @@ public final class Deposits extends JavaPlugin implements CommandExecutor {
                             try{
                                 days = Integer.parseInt(args[2]);
                             } catch (NumberFormatException e){
-                                p.sendMessage("Please input an integer, as the amount of days!");
+                                p.sendMessage(ChatColor.translateAlternateColorCodes('&', "&CPlease input an integer, as the amount of days!"));
                                 return true;
                             }
 
                             if (days > max_days){
-                                p.sendMessage(String.format("Days must be %d or lower!", max_days));
+                                p.sendMessage(ChatColor.translateAlternateColorCodes('&', String.format("Days must be %d or lower!", max_days)));
                                 return true;
                             }
                             double ddays = (double) days;
@@ -211,7 +211,7 @@ public final class Deposits extends JavaPlugin implements CommandExecutor {
 
                                 // returns 1 if already existing deposit
                                 if (Integer.parseInt(existingDeposit.getString(1)) != 0){
-                                    p.sendMessage("You already have a deposit!");
+                                    p.sendMessage(ChatColor.translateAlternateColorCodes('&',"&CYou already have a deposit!"));
                                     return true;
                                 } else {
                                     // If no deposit, then create one, but check if they have enough money beforehands.
@@ -227,9 +227,9 @@ public final class Deposits extends JavaPlugin implements CommandExecutor {
                                             eco.withdrawPlayer(p, amount);
 
 
-                                            p.sendMessage("Congrats! Your Deposit has been created. You can use '/deposit info' to check information about the deposit.");
+                                            p.sendMessage(ChatColor.translateAlternateColorCodes('&',"&A Congrats! Your Deposit has been created. You can use &7'/deposit info' &Ato check information about the deposit."));
                                         } else {
-                                            p.sendMessage("You don't have enough money!");
+                                            p.sendMessage(ChatColor.translateAlternateColorCodes('&',"&CYou don't have enough money!"));
                                         }
                                     }
                                 }
@@ -257,7 +257,7 @@ public final class Deposits extends JavaPlugin implements CommandExecutor {
 
                                 // returns 1 if already existing deposit
                                 if (Integer.parseInt(existingDeposit.getString(1)) == 0){
-                                    p.sendMessage("You Don't have a deposit! Create one using '/deposit create <amount> <days>'");
+                                    p.sendMessage(ChatColor.translateAlternateColorCodes('&',"&CYou Don't have a deposit! Create one using &7'/deposit create <amount> <days>'"));
                                     return true;
                                 } else {
                                     // If no deposit, then create one
@@ -272,12 +272,13 @@ public final class Deposits extends JavaPlugin implements CommandExecutor {
 
                                     long remainingTime = (endingTimestampDate.getTime() - curentTimestampDate.getTime()) / 1000;
 
-                                    p.sendMessage("Username: " + depositSet.getString(1) + "\n" +
-                                            "Amount: " + depositSet.getString(3) + "\n" +
-                                            "Duration: " + depositSet.getString(4) + "\n" +
-                                            "Interest: " + depositSet.getString(6) + "%" + "\n" +
-                                            String.format("Remaining Time: %d:%02d:%02d", remainingTime / (3600*24),
-                                                    (remainingTime % (3600*24)) / 3600, ((remainingTime % (3600*24)) % 3600) / 60));
+                                    p.sendMessage(ChatColor.translateAlternateColorCodes('&',
+                                            "&8Username: " + "&F" + depositSet.getString(1) + "\n" +
+                                            "&8Amount: " + "&A$" + depositSet.getString(3) + "\n" +
+                                            "&8Duration: " + "&A" + depositSet.getString(4) + "\n" +
+                                            "&8Interest: " + "&A" + depositSet.getString(6) + "%" + "\n" +
+                                            String.format("&8Remaining Time: &A%d:%02d:%02d", remainingTime / (3600*24),
+                                                    (remainingTime % (3600*24)) / 3600, ((remainingTime % (3600*24)) % 3600) / 60)));
 
                                 }
                             } catch (SQLException | ParseException e) {
@@ -297,15 +298,17 @@ public final class Deposits extends JavaPlugin implements CommandExecutor {
                                         DATABASENAME, TABLENAME, playerName);
 
                                 ResultSet depositSet = statement.executeQuery(amountQuery);
-                                depositSet.next();
+                                if (depositSet.next() != false) {
 
-                                eco.depositPlayer(p, Integer.parseInt(depositSet.getString(1)));
+                                    eco.depositPlayer(p, Integer.parseInt(depositSet.getString(1)));
 
-                                String query = String.format("delete from %s.%s where Username = '%s'",
-                                        DATABASENAME, TABLENAME, playerName);
-                                statement.execute(query);
-                                p.sendMessage("Your Deposit has been deleted!");
-
+                                    String query = String.format("delete from %s.%s where Username = '%s'",
+                                            DATABASENAME, TABLENAME, playerName);
+                                    statement.execute(query);
+                                    p.sendMessage(ChatColor.translateAlternateColorCodes('&',"&AYour Deposit has been deleted!"));
+                                } else {
+                                    p.sendMessage(ChatColor.translateAlternateColorCodes('&',"&AYou don't have a deposit yet! Use &7'/deposit create' $Ato create one!"));
+                                }
                                 } catch (SQLException e) {
                                 p.sendMessage(playerErrorMessage());
                                 e.printStackTrace();
@@ -322,7 +325,7 @@ public final class Deposits extends JavaPlugin implements CommandExecutor {
                                         DATABASENAME, TABLENAME, playerName);
 
                                 ResultSet depositSet = statement.executeQuery(amountQuery);
-                                depositSet.next();
+                                if (depositSet.next() != false){
 
                                 Date endingTimestampDate = sdf.parse(depositSet.getString(1));
                                 Date curentTimestampDate = sdf.parse(currentTimeStamp);
@@ -340,10 +343,13 @@ public final class Deposits extends JavaPlugin implements CommandExecutor {
                                     String query = String.format("delete from %s.%s where Username = '%s'",
                                             DATABASENAME, TABLENAME, playerName);
                                     statement.execute(query);
-                                    p.sendMessage(String.format("$%.2f has been added to your account!", depositAmount));
+                                    p.sendMessage(ChatColor.translateAlternateColorCodes('&',String.format("&A$%.2f has been added to your account!", depositAmount)));
                                 } else {
-                                    p.sendMessage(String.format("You can't claim the deposit yet! The remaining time is: %d:%02d:%02d",
-                                            remainingTime / (3600*24), (remainingTime % (3600*24)) / 3600, ((remainingTime % (3600*24)) % 3600) / 60));
+                                    p.sendMessage(ChatColor.translateAlternateColorCodes('&',String.format("&CYou can't claim the deposit yet! The remaining time is: %d:%02d:%02d",
+                                            remainingTime / (3600*24), (remainingTime % (3600*24)) / 3600, ((remainingTime % (3600*24)) % 3600) / 60)));
+                                }
+                                } else {
+                                    p.sendMessage(ChatColor.translateAlternateColorCodes('&',"&CYou don't have a deposit to claim! use &7'/deposit create <amount> <days>' &C to create a deposit!'"));
                                 }
 
                             } catch (SQLException | ParseException e) {
@@ -377,7 +383,7 @@ public final class Deposits extends JavaPlugin implements CommandExecutor {
     }
 
     public String playerErrorMessage(){
-        return "Something went wrong! Please contact Admins to report it.";
+        return ChatColor.translateAlternateColorCodes('&', "&CSomething went wrong! Please contact Admins to report it.");
     }
 
 }
